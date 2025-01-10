@@ -132,3 +132,10 @@
     src: "{{ openvpn_client_conf }}"
     dest: "{{ openvpn_client_conf_output }}"
     flat: yes
+
+- name: Transfer .ovpn file to playbook directory using scp
+  command: >
+    scp
+    {{ ansible_user }}@{{ inventory_hostname }}:/tmp/openvpn/client.ovpn
+    {{ playbook_dir }}/artifacts/client.ovpn
+  delegate_to: localhost
