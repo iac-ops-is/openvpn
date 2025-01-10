@@ -1,0 +1,134 @@
+- name: Install OpenVPN
+  apt:
+    name:
+      - openvpn
+      - easy-rsa
+    state: present
+  notify: Start openvpn
+
+- name: Ensure the directory for easy-rsa exists
+  file:
+    path: "{{ openvpn_easy_rsa_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Easyrsa init-pki
+  command:
+    cmd: "{{ openvpn_easy_rsa_binary }} init-pki"
+    chdir: "{{ openvpn_easy_rsa_dir }}"
+    creates: "{{ openvpn_easy_rsa_dir }}/pki"
+
+- name: Create openssl.cnf file for Easy-RSA
+  template:
+    src: "{{ openvpn_openssl_conf_template }}"
+    dest: "{{ openvpn_easy_rsa_dir }}/openssl.cnf"
+    mode: '0644'
+
+- name: Create authoruty certificate and key
+  command:
+    cmd: "{{ openvpn_easy_rsa_binary }} build-ca nopass"
+    chdir: "{{ openvpn_easy_rsa_dir }}"
+    creates: "{{ openvpn_easy_rsa_dir }}/pki/ca.crt"
+  environment:
+    EASYRSA_BATCH: "yes"
+    EASYRSA_REQ_CN: "{{ openvpn_easyrsa_req_cn }}"
+
+- name: Create Diffie-Hellman keys
+  command:
+    cmd: "{{ openvpn_easy_rsa_binary }} gen-dh"
+    chdir: "{{ openvpn_easy_rsa_dir }}"
+    creates: "{{ openvpn_easy_rsa_dir }}/pki/dh.pem"
+
+- name: Create restricted certificates list
+  command:
+    cmd: "{{ openvpn_easy_rsa_binary }} gen-crl"
+    chdir: "{{ openvpn_easy_rsa_dir }}"
+    creates: "{{ openvpn_easy_rsa_dir }}/pki/crl.pem"
+
+- name: Create a static key
+  command:
+    cmd: "openvpn --genkey --secret {{ openvpn_easy_rsa_dir }}/pki/ta.key"
+    creates: "{{ openvpn_easy_rsa_dir }}/pki/ta.key"
+
+- name: easy-rsa server nopass
+  command:
+    cmd: "{{ openvpn_easy_rsa_binary }} build-server-full server nopass"
+    chdir: "{{ openvpn_easy_rsa_dir }}"
+    creates: "{{ openvpn_easy_rsa_dir }}/pki/issued/server.crt"
+  environment:
+    EASYRSA_BATCH: "yes"
+    EASYRSA_REQ_CN: "server"
+
+- name: easy-rsa client nopass
+  command:
+    cmd: "{{ openvpn_easy_rsa_binary }} build-client-full client nopass"
+    chdir: "{{ openvpn_easy_rsa_dir }}"
+    creates: "{{ openvpn_easy_rsa_dir }}/pki/issued/client.crt"
+  environment:
+    EASYRSA_BATCH: "yes"
+    EASYRSA_REQ_CN: "client"
+
+- name: Ensure the directory for server keys exists
+  file:
+    path: "{{ openvpn_keys_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Copy certificates and keys
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: '0644'
+    remote_src: yes
+  loop:
+    - { src: "{{ openvpn_easy_rsa_dir }}/pki/ca.crt", dest: "{{ openvpn_ca_cert }}" }
+    - { src: "{{ openvpn_easy_rsa_dir }}/pki/issued/server.crt", dest: "{{ openvpn_server_cert }}" }
+    - { src: "{{ openvpn_easy_rsa_dir }}/pki/private/server.key", dest: "{{ openvpn_server_key }}" }
+    - { src: "{{ openvpn_easy_rsa_dir }}/pki/dh.pem", dest: "{{ openvpn_dh_param }}" }
+    - { src: "{{ openvpn_easy_rsa_dir }}/pki/ta.key", dest: "{{ openvpn_ta_key }}" }
+  notify:
+    - Restart openvpn
+
+- name: Copy OpenVPN server configuration
+  template:
+    src: "{{ openvpn_server_conf_template }}"
+    dest: "{{ openvpn_server_conf }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Read CA certificate
+  slurp:
+    src: "{{ openvpn_ca_cert }}"
+  register: ca_cert_content
+
+- name: Read client certificate
+  slurp:
+    src: "{{ openvpn_easy_rsa_dir }}/pki/issued/client.crt"
+  register: client_cert_content
+
+- name: Read client key
+  slurp:
+    src: "{{ openvpn_easy_rsa_dir }}/pki/private/client.key"
+  register: client_key_content
+
+- name: Read TA key
+  slurp:
+    src: "{{ openvpn_ta_key }}"
+  register: ta_key_content
+
+- name: Generate OVPN client configuration
+  template:
+    src: "{{ openvpn_client_conf_template }}"
+    dest: "{{ openvpn_client_conf }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Fetch client config from server to local host
+  fetch:
+    src: "{{ openvpn_client_conf }}"
+    dest: "{{ openvpn_client_conf_output }}"
+    flat: yes

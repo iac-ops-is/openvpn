@@ -1,0 +1,7 @@
+- name: Converge
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Create Open-VPN server
+      ansible.builtin.include_role:
+        name: "openvpn"

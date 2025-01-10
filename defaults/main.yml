@@ -1,0 +1,31 @@
+openvpn_openssl_conf_template: openssl.conf.j2
+openvpn_client_conf_template: client.ovpn.j2
+openvpn_server_conf_template: server.conf.j2
+
+openvpn_easyrsa_req_country: US
+openvpn_easyrsa_req_province: California
+openvpn_easyrsa_req_city: San Francisco
+openvpn_easyrsa_req_org: Copyleft Certificate Co
+openvpn_easyrsa_req_ou: My Organizational Unit
+openvpn_easyrsa_req_cn: server
+openvpn_easyrsa_req_email: sobaka@raiz
+
+openvpn_port: 1194
+openvpn_proto: udp
+
+openvpn_dir: /etc/openvpn
+
+openvpn_easy_rsa_dir: "{{ openvpn_dir }}/easy-rsa"
+openvpn_keys_dir: "{{ openvpn_easy_rsa_dir }}/keys"
+openvpn_easy_rsa_binary: /usr/share/easy-rsa/easyrsa
+
+openvpn_server_conf: "{{ openvpn_dir }}/server.conf"
+openvpn_client_conf: "{{ openvpn_dir }}/client.ovpn"
+openvpn_ca_cert: "{{ openvpn_keys_dir }}/ca.crt"
+openvpn_server_cert: "{{ openvpn_keys_dir }}/server.crt"
+openvpn_server_key: "{{ openvpn_keys_dir }}/server.key"
+openvpn_dh_param: "{{ openvpn_keys_dir }}/dh.pem"
+openvpn_ta_key: "{{ openvpn_keys_dir }}/ta.key"
+openvpn_client_cert: "{{ openvpn_keys_dir }}/client.crt"
+openvpn_client_key: "{{ openvpn_keys_dir }}/client.key"
+openvpn_client_conf_output: "{{ openvpn_dir }}/client.ovpn"

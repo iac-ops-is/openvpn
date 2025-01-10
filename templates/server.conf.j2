@@ -1,0 +1,23 @@
+port {{ openvpn_port }}
+proto {{ openvpn_proto }}
+dev tun
+ca {{ openvpn_ca_cert }}
+cert {{ openvpn_server_cert }}
+key {{ openvpn_server_key }}
+dh {{ openvpn_dh_param }}
+auth SHA256
+tls-auth {{ openvpn_ta_key }} 0
+topology subnet
+server 10.8.0.0 255.255.255.0
+ifconfig-pool-persist ipp.txt
+push "redirect-gateway def1 bypass-dhcp"
+push "dhcp-option DNS 8.8.8.8"
+push "dhcp-option DNS 8.8.4.4"
+keepalive 10 120
+cipher AES-256-CBC
+user nobody
+group nogroup
+persist-key
+persist-tun
+status openvpn-status.log
+verb 3

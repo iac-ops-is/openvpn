@@ -1,0 +1,15 @@
+galaxy_info:
+  role_name: openvpn
+  namespace: roles
+  author: maksve11
+  description: Role to setup OpenVPN server
+
+  license: MIT
+
+  min_ansible_version: 2.1
+
+  galaxy_tags: []
+
+  platforms:
+    - name: Ubuntu
+dependencies: []
